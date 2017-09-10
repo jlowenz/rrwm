@@ -1,4 +1,4 @@
-function [ X, score, time ] = cRRWM( A, g1_count, g2_count, ...
+function [ X, score, time ] = cRRWM( A, group1, group2, ...
     prob_c, amp_max, iter_max, conv_threshold, tolC)
 %CRRWM compute the reweighted random walk matching algorithm on the given
 %affinity matrix A
@@ -9,7 +9,7 @@ function [ X, score, time ] = cRRWM( A, g1_count, g2_count, ...
 %   tolC: 1e-3
 
 % this may not suffice... i.e. we may want to build the groups ourselves
-[group1, group2] = make_groups(g1_count, g2_count);
+%[group1, group2] = make_groups(g1_count, g2_count);
 
 % Function evaluation & Excution time Check
 tic; Xraw = RRWM(A, group1, group2, 'c', prob_c, 'amp_max', amp_max, ...
