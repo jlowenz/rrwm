@@ -11,11 +11,10 @@ namespace rrwm {
   static std::atomic_bool g_initialized(false);
   static std::atomic_uint g_refcount(0);
 
-
   /**
    * Initialize MATLAB if needed. Called for every function or class.
    */
-  void init_rrwm()
+  void init()
   {
     if (!g_initialized.load()) {
       std::cout << "Initializing MATLAB/RRWM (should run once)" << std::endl;
@@ -33,9 +32,14 @@ namespace rrwm {
     g_refcount.fetch_add(1);  
   }
 
-  void shutdown_rrwm()
+  void shutdown()
   {
     // do something
+    g_refcount.fetch_add(-1);
+    if (g_refcount.load() <= 0) {
+      librrwmTerminate();
+      g_initialized.store(false);
+    }
   }
 
   // Some useful classes for converting between MATLAB and C++
@@ -44,8 +48,16 @@ namespace rrwm {
     mxArray* mv_;
     double* v_;
   
-    scalar_t() : mv_(mxCreateDoubleScalar(0.0)), v_(mxGetPr(mv_)) {}
-    scalar_t(double d) : mv_(mxCreateDoubleScalar(d)), v_(mxGetPr(mv_)) {}
+    scalar_t() : mv_(mxCreateDoubleScalar(0.0)), v_(mxGetPr(mv_))
+    {
+      assert(mv_);
+      std::cout << "created scalar: " << mv_ << " ~ " << *v_ << std::endl;
+    }
+    scalar_t(double d) : mv_(mxCreateDoubleScalar(d)), v_(mxGetPr(mv_))
+    {
+      assert(mv_);
+      std::cout << "created scalar: " << mv_ << " ~ " << *v_ << std::endl;
+    }
 
     virtual ~scalar_t() { mxDestroyArray(mv_); v_ = NULL; }
 
@@ -175,7 +187,13 @@ namespace rrwm {
     scalar_t conv_threshold(params.conv_threshold);
     scalar_t tolC(params.tolC);
 
-    mxArray* mX, *mTime, *mScore;
+    mxArray* mX=NULL, *mTime=NULL, *mScore=NULL;
+    // mwSize sz[] = {2,2};
+    // mX = mxCreateNumericArray(2, sz, mxDOUBLE_CLASS, mxREAL);
+    // mTime = mxCreateDoubleScalar(0.0);
+    // mScore = mxCreateDoubleScalar(0.0);
+    // I keep forgetting, they need to be valid arrays of the correct
+    // type. HOW DOES THAT MAKE ANY SENSE?
     bool res = mlfCRRWM(3, &mX, &mScore, &mTime, m_A, m_group1, m_group2,
                         prob_c, amp_max, iter_max, conv_threshold, tolC);
 
@@ -191,10 +209,20 @@ namespace rrwm {
   bool
   make_groups(mat& group1, mat& group2, int count1, int count2)
   {
-    mxArray* m_group1;
-    mxArray* m_group2;
+    std::cout << "make_groups " << count1 << " " << count2 << std::endl;
+    mxArray* m_group1 = mxCreateSparseLogicalMatrix(1,1,1);
+    mxArray* m_group2 = mxCreateSparseLogicalMatrix(1,1,1);
     scalar_t c1(count1), c2(count2);
-    mlfMake_groups(2, &m_group1, &m_group2, c1, c2);
+    mlfMake_default_groups(2, &m_group1, &m_group2, c1, c2);
+
+    size_t n = mxGetNumberOfDimensions(m_group1);
+    const mwSize* sz = mxGetDimensions(m_group1);
+    std::cout << "m_group1 " << n << ", ";
+    for (size_t i = 0; i < n; ++i) {
+      std::cout << sz[i] << " ";
+    }
+    std::cout << std::endl;
+    
     array2d_t g1(m_group1), g2(m_group2);
     group1 = g1;
     group2 = g2;

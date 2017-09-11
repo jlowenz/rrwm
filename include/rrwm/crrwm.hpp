@@ -35,8 +35,8 @@ namespace rrwm {
     params_t() : prob_c(0.2), amp_max(30), iter_max(300), conv_threshold(1e-25), tolC(1e-3) {}
   };
 
-  void init_rrwm();
-  void shutdown_rrwm();
+  void init();
+  void shutdown();
   
   /**
    * Run the reweighted random walk graph matching algorithm.

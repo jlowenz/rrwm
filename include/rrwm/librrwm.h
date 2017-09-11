@@ -1,9 +1,9 @@
 /*
  * MATLAB Compiler: 6.4 (R2017a)
- * Date: Fri Sep  8 17:15:57 2017
+ * Date: Sun Sep 10 21:33:57 2017
  * Arguments:
  * "-B""macro_default""-W""lib:librrwm""-T""link:lib""-d""outlib""cRRWM.m""make_
- * groups.m"
+ * default_groups.m"
  */
 
 #ifndef __librrwm_h
@@ -77,13 +77,14 @@ extern LIB_librrwm_C_API
 bool MW_CALL_CONV mlxCRRWM(int nlhs, mxArray *plhs[], int nrhs, mxArray *prhs[]);
 
 extern LIB_librrwm_C_API 
-bool MW_CALL_CONV mlxMake_groups(int nlhs, mxArray *plhs[], int nrhs, mxArray *prhs[]);
+bool MW_CALL_CONV mlxMake_default_groups(int nlhs, mxArray *plhs[], int nrhs, mxArray 
+                                         *prhs[]);
 
 
 
-extern LIB_librrwm_C_API bool MW_CALL_CONV mlfCRRWM(int nargout, mxArray** X, mxArray** score, mxArray** time, mxArray* A, mxArray* g1_count, mxArray* g2_count, mxArray* prob_c, mxArray* amp_max, mxArray* iter_max, mxArray* conv_threshold, mxArray* tolC);
+extern LIB_librrwm_C_API bool MW_CALL_CONV mlfCRRWM(int nargout, mxArray** X, mxArray** score, mxArray** time, mxArray* A, mxArray* group1, mxArray* group2, mxArray* prob_c, mxArray* amp_max, mxArray* iter_max, mxArray* conv_threshold, mxArray* tolC);
 
-extern LIB_librrwm_C_API bool MW_CALL_CONV mlfMake_groups(int nargout, mxArray** group1, mxArray** group2, mxArray* g1_count, mxArray* g2_count);
+extern LIB_librrwm_C_API bool MW_CALL_CONV mlfMake_default_groups(int nargout, mxArray** group1, mxArray** group2, mxArray* g1_count, mxArray* g2_count);
 
 #ifdef __cplusplus
 }

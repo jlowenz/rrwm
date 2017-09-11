@@ -1,4 +1,4 @@
-function [ group1, group2 ] = make_groups( g1_count, g2_count )
+function [ group1, group2 ] = make_default_groups( g1_count, g2_count )
 %make_groups: make group arguments
 E12 = ones(g1_count,g2_count);
 [L12(:,1), L12(:,2)] = find(E12);

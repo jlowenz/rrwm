@@ -19,9 +19,9 @@ tic; Xraw = RRWM(A, group1, group2, 'c', prob_c, 'amp_max', amp_max, ...
 E12 = ones(g1_count, g2_count);
 % Hungarian assignment
 X = zeros(size(E12)); X(find(E12)) = Xraw;
-X = discretisationMatching_hungarian(X,cdata.E12); 
+X = discretisationMatching_hungarian(X,E12); 
 X = X(find(E12));
 % Matching Score
-score = X'*cdata.affinityMatrix*X; % objective score function
+score = X'*A*X; % objective score function
 end
 
