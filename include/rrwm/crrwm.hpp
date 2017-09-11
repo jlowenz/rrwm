@@ -49,12 +49,12 @@ namespace rrwm {
    * returns: true if the algorithm completed successfully, false otherwise
    */
   bool
-  rrwm(results_t& results, const mat& A, const mat& group1, const mat& group2, const params_t& params = params_t());
+  rrwm(results_t& results, const mat& A, const sp_umat& group1, const sp_umat& group2, const params_t& params = params_t());
 
   /**
    * Compute a default pair of groups using the edge size of the 
    */
   bool
-  make_groups(mat& group1, mat& group2, int count1, int count2);
+  make_groups(sp_umat& group1, sp_umat& group2, int count1, int count2);
 
 }

@@ -168,17 +168,117 @@ namespace rrwm {
     }
   };
 
+  template<typename T>
+  struct sparse_traits
+  {
+  };
 
+  template<typename T>
+  struct is_logical {
+    typedef T type;
+    static const bool value = false;
+    template<typename A>
+    static T convert(const A& t) { return t; }
+  };
+
+  template<>
+  struct is_logical<mxLogical> {
+    typedef mxLogical type;
+    static const bool value = true;
+    template<typename A>
+    static type convert(const A& t) { return static_cast<bool>(t); }
+  };
+  
+#define SPECIALIZE_SPARSE(T,A) template<>                               \
+  struct sparse_traits<T> {                                             \
+  typedef T value_type;                                                 \
+  typedef A arma_value_type;                                            \
+  typedef SpMat<A> arma_type;                                           \
+  static arma_type to_arma(mxArray* M) {                                \
+    assert(mxIsSparse(M));                                              \
+    const mwSize* sz = mxGetDimensions(M);                              \
+    mwSize nzmax = mxGetNzmax(M);                                       \
+    mwIndex* jc = mxGetJc(M);                                           \
+    mwIndex* ir = mxGetIr(M);                                           \
+    value_type* data;                                                   \
+    data = (value_type*)mxGetData(M);                                   \
+    umat locs(2,nzmax);                                                 \
+    Col<arma_value_type> vals(nzmax);                                   \
+    int k = 0;                                                          \
+    for (int j = 0; j < sz[1]; ++j) {                                   \
+      int count = jc[j+1] - jc[j];                                      \
+      for (int i = 0; i < count; ++i) {                                 \
+        locs(0,k) = ir[jc[j]+i];                                        \
+        locs(1,k) = j;                                                  \
+        vals(k++) = data[jc[j]+i];                                      \
+      }                                                                 \
+    }                                                                   \
+    locs.resize(2,k);                                                   \
+    vals.resize(k);                                                     \
+    return arma_type(locs, vals, sz[0], sz[1]);                         \
+  }                                                                     \
+  static mxArray* to_matlab(const arma_type& m)                         \
+  {                                                                     \
+  mxArray* out;                                                         \
+  int nzmax = m.n_rows * m.n_cols * 0.3;                                \
+  auto start = m.begin();                                               \
+  auto end = m.end();                                                   \
+  int n = std::distance(start, end);                                    \
+  nzmax = std::max(nzmax, n);                                           \
+  if (is_logical<value_type>::value) {                                  \
+  out = mxCreateSparseLogicalMatrix(m.n_rows, m.n_cols, nzmax);         \
+} else {                                                                \
+  out = mxCreateSparse(m.n_rows, m.n_cols, nzmax, mxREAL);              \
+ }                                                                      \
+ mwIndex* jc = mxGetJc(out);                                            \
+ mwIndex* ir = mxGetIr(out);                                            \
+ value_type* data = (value_type*)mxGetData(out);                        \
+ auto it = start;                                                       \
+ int k = 0;                                                             \
+ for (int j = 0; j < m.n_cols; ++j) {                                   \
+   jc[j] = k;                                                           \
+   while (it != end && it.col() == j) {                                 \
+     value_type v = is_logical<value_type>::convert(*it);               \
+     data[k] = v;                                                       \
+     ir[k] = it.row();                                                  \
+     k++;                                                               \
+     it++;                                                              \
+   }                                                                    \
+ }                                                                      \
+ jc[m.n_cols] = k;                                                      \
+ return out;                                                            \
+ }                                                                      \
+};                                                                      \
+  
+  SPECIALIZE_SPARSE(mxLogical, sp_umat::elem_type)
+  SPECIALIZE_SPARSE(double, sp_mat::elem_type)
+
+  template<typename T>
+  typename sparse_traits<T>::arma_type to_arma(mxArray* M)
+  {
+    return sparse_traits<T>::to_arma(M);
+  }
+
+  template<typename T>
+  mxArray* to_matlab(const typename sparse_traits<T>::arma_type& m)
+  {
+    return sparse_traits<T>::to_matlab(m);
+  }
+
+  // hmmm, can we do something different?
+  
   bool
-  rrwm(results_t& results, const mat& A, const mat& group1, const mat& group2,
+  rrwm(results_t& results, const mat& A, const sp_umat& group1, const sp_umat& group2,
        const params_t& params)
   {
     array2d_t X;
     scalar_t time;
     scalar_t score;
 
-    array2d_t m_group1(group1);
-    array2d_t m_group2(group2);
+    //array2d_t m_group1(group1);
+    //array2d_t m_group2(group2);
+    mxArray* m_group1 = sparse_traits<mxLogical>::to_matlab(group1);
+    mxArray* m_group2 = sparse_traits<mxLogical>::to_matlab(group2);
     array2d_t m_A(A);
 
     scalar_t prob_c(params.prob_c);
@@ -207,7 +307,7 @@ namespace rrwm {
   }
 
   bool
-  make_groups(mat& group1, mat& group2, int count1, int count2)
+  make_groups(sp_umat& group1, sp_umat& group2, int count1, int count2)
   {
     std::cout << "make_groups " << count1 << " " << count2 << std::endl;
     mxArray* m_group1 = mxCreateSparseLogicalMatrix(1,1,1);
@@ -222,10 +322,9 @@ namespace rrwm {
       std::cout << sz[i] << " ";
     }
     std::cout << std::endl;
-    
-    array2d_t g1(m_group1), g2(m_group2);
-    group1 = g1;
-    group2 = g2;
+
+    group1 = to_arma<mxLogical>(m_group1);
+    group2 = to_arma<mxLogical>(m_group2);
   }
 
 }

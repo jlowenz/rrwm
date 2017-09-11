@@ -10,7 +10,7 @@ using namespace arma;
 template<class T>
 T regspace(int start, int end)
 {
-  return linspace<T>(start, end, end - start);
+  return linspace<T>(start, end-1, end - start);
 }
 
 
@@ -33,20 +33,23 @@ int
 main(int argc, char** argv)
 {
   int n_in = 40; // number of inliers
-  int n_out_p = 10; // number of outliers in model
-  int n_out_q = 10; // numebr of outliers in query
-  double ratio_fill = 0.4;
-  double deformation = 1.0;
-  double scale_2D = 0.3;
+  int n_out_p = 0; // number of outliers in model
+  int n_out_q = 0; // numebr of outliers in query
+  double ratio_fill = 1.0;
+  double deformation = 0.0;
+  double scale_2D = 0.15;
 
   rrwm::init();
-  
+
+  srand(time(NULL));  
+
   // create a model graph
   // create a derived, noisy, query graph
 
   int nG1 = n_in + n_out_p;
   int nG2 = n_in + n_out_q;
-  uvec seq = shuffle(regspace<uvec>(0,nG2-1));
+  uvec seq = shuffle(regspace<uvec>(0,nG2));
+  std::cout << "Seq: " << seq << std::endl;
   
   mat G1 = trimatl(randu(nG1,nG1), -1);
   G1 = G1 + G1.t();
@@ -64,7 +67,9 @@ main(int argc, char** argv)
   P = P + P.t();
   selected = find(P > ratio_fill);
   G2.elem(selected).eval() = std::numeric_limits<double>::quiet_NaN();
-  G2.submat(seq(span(0,n_in)), seq(span(0,n_in))) = G1(span(0,n_in),span(0,n_in));
+  auto rc = seq(span(0,n_in-1));
+  std::cout << rc << std::endl;
+  G2.submat(rc, rc) = G1(span(0,n_in-1),span(0,n_in-1));
   G2 += N;
 
   // M = (repmat(G1, nP2, nP2)-kron(G2,ones(nP1))).^2;
@@ -88,14 +93,18 @@ main(int argc, char** argv)
   for (int i = 0; i < n_in; ++i) {
     GT(i,seq(i)) = 1;
   }
-
-  mat group1, group2;
+  
+  sp_umat group1, group2; // logicals
   rrwm::make_groups(group1, group2, nG1, nG2);
   rrwm::results_t results;
   rrwm::rrwm(results, M, group1, group2);
 
-  mat diff = results.X - GT;
-  std::cout << "Difference: " << diff << std::endl;
+  //std::cout << "Results: " << results.X << std::endl;
+  double acc;
+  acc = dot(results.X, vectorise(GT)) / accu(GT);
+  std::cout << "Accuracy: " << acc << std::endl;
+
+  rrwm::shutdown();
   
   return 0;
 }

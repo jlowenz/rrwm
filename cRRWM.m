@@ -16,6 +16,9 @@ tic; Xraw = RRWM(A, group1, group2, 'c', prob_c, 'amp_max', amp_max, ...
     'iterMax', iter_max, 'thresConvergence', conv_threshold, ...
     'tolC', tolC); time = toc;
 % Discretization by one-to-one mapping constraints
+g1_count = size(group1, 2);
+g2_count = size(group2, 2);
+disp(['counts ', num2str(g1_count), ' ', num2str(g2_count)]);
 E12 = ones(g1_count, g2_count);
 % Hungarian assignment
 X = zeros(size(E12)); X(find(E12)) = Xraw;
